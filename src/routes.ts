@@ -49,4 +49,10 @@ export const Routes = [
     controller: GroundController,
     action: "enqueue",
   },
+  {
+    method: "post",
+    route: "/userPaidLightningInvoice",
+    controller: GroundController,
+    action: 'userPaidLightningInvoice'
+  }
 ];

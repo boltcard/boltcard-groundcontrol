@@ -3,6 +3,7 @@ import { PushLog } from "../entity/PushLog";
 import { TokenToAddress } from "../entity/TokenToAddress";
 import { TokenToHash } from "../entity/TokenToHash";
 import { TokenToTxid } from "../entity/TokenToTxid";
+import { TokenToUserid } from "../entity/TokenToUserid";
 import { components } from "../openapi/api";
 const jwt = require("jsonwebtoken");
 const Frisbee = require("frisbee");
@@ -173,6 +174,33 @@ export class GroundControlToMajorTom {
     if (pushNotification.os === "ios") return GroundControlToMajorTom._pushToApns(dataSource, apnsP8, pushNotification.token, apnsPayload, pushNotification, pushNotification.hash);
   }
 
+  static async pushLightningInvoiceUserPaid(dataSource: DataSource, serverKey: string, apnsP8: string, pushNotification: components["schemas"]["PushNotificationLightningInvoiceUserPaid"]): Promise<[object, object]> {
+    const fcmPayload = {
+      data: {},
+      notification: {
+        body: "Paid: " + (pushNotification.memo || "your invoice"),
+        title: "+" + pushNotification.sat + " sats",
+        badge: pushNotification.badge,
+        tag: pushNotification.userid,
+      },
+    };
+
+    const apnsPayload = {
+      aps: {
+        badge: pushNotification.badge,
+        alert: {
+          title: "+" + pushNotification.sat + " sats",
+          body: "Paid: " + (pushNotification.memo || "your invoice"),
+        },
+        sound: "default",
+      },
+      data: {},
+    };
+
+    if (pushNotification.os === "android") return GroundControlToMajorTom._pushToFcm(dataSource, serverKey, pushNotification.token, fcmPayload, pushNotification);
+    if (pushNotification.os === "ios") return GroundControlToMajorTom._pushToApns(dataSource, apnsP8, pushNotification.token, apnsPayload, pushNotification, pushNotification.userid);
+  }
+
   protected static async _pushToApns(dataSource: DataSource, apnsP8: string, token: string, apnsPayload: object, pushNotification: components["schemas"]["PushNotificationBase"], collapseId): Promise<[object, object]> {
     return new Promise(function (resolve) {
       // we pass some of the notification properties as data properties to FCM payload:
@@ -299,6 +327,7 @@ export class GroundControlToMajorTom {
     await dataSource.getRepository(TokenToAddress).createQueryBuilder().delete().where("token = :token", { token }).execute();
     await dataSource.getRepository(TokenToTxid).createQueryBuilder().delete().where("token = :token", { token }).execute();
     await dataSource.getRepository(TokenToHash).createQueryBuilder().delete().where("token = :token", { token }).execute();
+    await dataSource.getRepository(TokenToUserid).createQueryBuilder().delete().where("token = :token", { token }).execute();
   }
 
   static processFcmResponse(dataSource: DataSource, response, token: string) {

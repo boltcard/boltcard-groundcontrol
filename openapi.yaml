@@ -19,7 +19,17 @@ paths:
       responses:
         "200":
           description: OK
-
+  /userPaidLightningInvoice:
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserPaidLightningInvoiceNotification"
+      responses:
+        "200":
+          description: OK
   /majorTomToGroundControl:
     post:
       summary: "Associate bitcoin addressess / ln preimage hashes / txids that you wish to be notified about to specific push token. Token serves as unique identifier of a device/user. Also, OS of the token"
@@ -39,6 +49,10 @@ paths:
                   items:
                     type: string
                 txids:
+                  type: array
+                  items:
+                    type: string
+                userids:
                   type: array
                   items:
                     type: string
@@ -72,6 +86,7 @@ paths:
                   type: array
                   items:
                     type: string
+                userids
                 token:
                   type: string
                 os:
@@ -214,6 +229,23 @@ components:
         amt_paid_sat:
           type: "number"
           description: "exactly how much satoshis was paid to make this invoice settked (>= invoice amount)"
+
+    UserPaidLightningInvoiceNotification:
+      description: object thats posted to GroundControl to notify end-user that he paid someone
+      type: "object"
+      properties:
+        payment_request:
+          type: "string"
+          description: "invoice number"
+        userid:
+          type: "string"
+          description: "hex string preimage hash"
+        amt_paid_sat:
+          type: "number"
+          description: "exactly how much satoshis was paid to make this invoice settked (>= invoice amount)"
+        memo:
+          type: "string"
+          description: "text that was embedded in invoice paid"
 
     PushNotificationBase:
       description: payload for push notification delivered to phone

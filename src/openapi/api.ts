@@ -29,6 +29,7 @@ export type paths = {
             addresses?: string[];
             hashes?: string[];
             txids?: string[];
+            userids?: string[];
             token?: string;
             os?: string;
           } & { [key: string]: unknown };
@@ -48,6 +49,7 @@ export type paths = {
             addresses?: string[];
             hashes?: string[];
             txids?: string[];
+            userids?: string[];
             token?: string;
             os?: string;
           } & { [key: string]: unknown };
@@ -122,6 +124,19 @@ export type paths = {
       };
     };
   };
+  "/userPaidLightningInvoice": {
+    post: {
+      responses: {
+        /** OK */
+        200: unknown;
+      };
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["UserPaidLightningInvoiceNotification"];
+        };
+      };
+    };
+  };
 };
 
 export type components = {
@@ -157,6 +172,15 @@ export type components = {
       /** @description exactly how much satoshis was paid to make this invoice settked (>= invoice amount) */
       amt_paid_sat?: number;
     } & { [key: string]: unknown };
+    /** @description object thats posted to GroundControl to notify end-user that his specific invoice was paid by someone */
+    UserPaidLightningInvoiceNotification: {
+      payment_request?: string;
+      /** @description wallet login id */
+      userid?: string;
+      /** @description exactly how much satoshis was paid to make this invoice settked (>= invoice amount) */
+      amt_paid_sat?: number;
+      memo?: string;
+    } & { [key: string]: unknown };
     /** @description payload for push notification delivered to phone */
     PushNotificationBase: {
       /**
@@ -165,10 +189,11 @@ export type components = {
        *  * `2` - New transaction to one of your addresses
        *  * `3` - New unconfirmed transaction to one of your addresses
        *  * `4` - Transaction confirmed
+       *  * `5` - User paid lightning invoice 
        *
        * @enum {integer}
        */
-      type: 1 | 2 | 3 | 4;
+      type: 1 | 2 | 3 | 4 | 5;
       token: string;
       /** @enum {string} */
       os: "android" | "ios";
@@ -222,6 +247,18 @@ export type components = {
         level?: "transactions";
         /** @description txid of the transaction that got confirmed */
         txid: string;
+      } & { [key: string]: unknown }) & { [key: string]: unknown };
+    PushNotificationLightningInvoiceUserPaid: components["schemas"]["PushNotificationBase"] &
+      ({
+        /** @enum {integer} */
+        type?: 5;
+        /** @enum {string} */
+        level?: "transactions";
+        /** @description amount of satoshis */
+        sat: number;
+        /** @description wallet login id */
+        userid: string;
+        payment_request?: string;
       } & { [key: string]: unknown }) & { [key: string]: unknown };
   };
 };

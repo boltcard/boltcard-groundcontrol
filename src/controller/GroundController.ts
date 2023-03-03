@@ -3,6 +3,7 @@ import { NextFunction, Request, Response } from "express";
 import { TokenToAddress } from "../entity/TokenToAddress";
 import { TokenToHash } from "../entity/TokenToHash";
 import { TokenToTxid } from "../entity/TokenToTxid";
+import { TokenToUserid } from "../entity/TokenToUserid";
 import { TokenConfiguration } from "../entity/TokenConfiguration";
 import { SendQueue } from "../entity/SendQueue";
 import { PushLog } from "../entity/PushLog";
@@ -69,6 +70,7 @@ export class GroundController {
   private _tokenToAddressRepository;
   private _tokenToHashRepository;
   private _tokenToTxidRepository;
+  private _tokenToUseridRepository;
   private _tokenConfigurationRepository;
   private _sendQueueRepository;
 
@@ -96,6 +98,14 @@ export class GroundController {
 
     this._tokenToTxidRepository = connection.getRepository(TokenToTxid);
     return this._tokenToTxidRepository;
+  }
+
+  get tokenToUseridRepository() {
+    if (this._tokenToUseridRepository) {
+      return this._tokenToUseridRepository;
+    }
+    this._tokenToUseridRepository = connection.getRepository(TokenToUserid);
+    return this._tokenToUseridRepository;
   }
 
   get tokenConfigurationRepository() {
@@ -136,6 +146,10 @@ export class GroundController {
     }
     if (!body.txids || !Array.isArray(body.txids)) {
       body.txids = [];
+    }
+
+    if (!body.userids || !Array.isArray(body.userids)) {
+      body.userids = [];
     }
 
     if (!body.token || !body.os) {
@@ -185,6 +199,17 @@ export class GroundController {
         });
       } catch (_) {}
     }
+
+    for (const userid of body.userids) {
+      // todo: validate userids
+      try {
+        await this.tokenToUseridRepository.save({
+          userid: userid,
+          token: body.token,
+          os: body.os,
+        });
+      } catch (e) {console.log(e.message)}
+    }
     response.status(201).send("");
   }
 
@@ -200,6 +225,9 @@ export class GroundController {
     }
     if (!body.txids || !Array.isArray(body.txids)) {
       body.txids = [];
+    }
+    if (!body.userids || !Array.isArray(body.userids)) {
+      body.userids = [];
     }
 
     if (!body.token || !body.os) {
@@ -228,6 +256,13 @@ export class GroundController {
       } catch (_) {}
     }
 
+    for (const userid of body.userids) {
+      try {
+        const useridRecord = await this.tokenToUseridRepository.findOneBy({ os: body.os, token: body.token, userid });
+        await this.tokenToUseridRepository.remove(useridRecord);
+      } catch (_) {}
+    }
+
     response.status(201).send("");
   }
 
@@ -252,6 +287,7 @@ export class GroundController {
         hash: hashShouldBe,
       },
     });
+    console.log('SETTLED!', [body], [tokenToHashAll]);
     for (const tokenToHash of tokenToHashAll) {
       process.env.VERBOSE && console.log("enqueueing to token", tokenToHash.token, tokenToHash.os);
       const pushNotification: components["schemas"]["PushNotificationLightningInvoicePaid"] = {
@@ -352,5 +388,39 @@ export class GroundController {
     };
 
     return config;
+  }
+
+  async userPaidLightningInvoice(request: Request, response: Response, next: NextFunction) {
+    const body: paths["/userPaidLightningInvoice"]["post"]["requestBody"]["content"]["application/json"] = request.body;
+
+
+    const tokenToUseridAll = await this.tokenToUseridRepository.find({
+      where: {
+        userid: body.userid,
+      },
+    });
+
+    console.log('PAID!', [body], [tokenToUseridAll]);
+
+    for (const tokenToUserid of tokenToUseridAll) {
+      process.env.VERBOSE && console.log("enqueueing to token", tokenToUserid.token, tokenToUserid.os);
+      const pushNotification: components["schemas"]["PushNotificationLightningInvoiceUserPaid"] = {
+        sat: body.amt_paid_sat,
+        badge: 1,
+        type: 5,
+        level: "transactions",
+        os: tokenToUserid.os === "android" ? "android" : "ios", //hacky
+        token: tokenToUserid.token,
+        userid: body.userid,
+        payment_request: body.payment_request,
+        memo: body.memo
+      };
+
+      await this.sendQueueRepository.save({
+        data: JSON.stringify(pushNotification),
+      });
+    }
+
+    response.status(200).send("");
   }
 }

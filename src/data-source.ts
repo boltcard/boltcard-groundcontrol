@@ -9,6 +9,8 @@ if (!process.env.JAWSDB_MARIA_URL) {
 const url = require("url");
 const parsed = url.parse(process.env.JAWSDB_MARIA_URL);
 
+console.log('MARIADB', [parsed]);
+
 export default new DataSource({
   type: "mariadb",
   host: parsed.hostname,
