@@ -393,7 +393,10 @@ export class GroundController {
   async userPaidLightningInvoice(request: Request, response: Response, next: NextFunction) {
     const body: paths["/userPaidLightningInvoice"]["post"]["requestBody"]["content"]["application/json"] = request.body;
 
-
+    if(!body.userid) {
+      response.status(400).send("no userid passed");
+      return;
+    }
     const tokenToUseridAll = await this.tokenToUseridRepository.find({
       where: {
         userid: body.userid,
