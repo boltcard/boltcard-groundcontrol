@@ -61,27 +61,29 @@ async function processBlock(blockNum, sendQueueRepository: Repository<SendQueue>
   }
 
   console.warn(addresses.length, "addresses paid in block");
-  // allPotentialPushPayloadsArray.push({ address: "bc1qaemfnglf928kd9ma2jzdypk333au6ctu7h7led", txid: "666", sat: 1488, type: 2, token: "", os: "ios" }); // debug fixme
-  // addresses.push("bc1qaemfnglf928kd9ma2jzdypk333au6ctu7h7led"); // debug fixme
+  if(addresses.length) {
+    // allPotentialPushPayloadsArray.push({ address: "bc1qaemfnglf928kd9ma2jzdypk333au6ctu7h7led", txid: "666", sat: 1488, type: 2, token: "", os: "ios" }); // debug fixme
+    // addresses.push("bc1qaemfnglf928kd9ma2jzdypk333au6ctu7h7led"); // debug fixme
 
-  const query = dataSource.getRepository(TokenToAddress).createQueryBuilder().where("address IN (:...address)", { address: addresses });
+    const query = dataSource.getRepository(TokenToAddress).createQueryBuilder().where("address IN (:...address)", { address: addresses });
 
-  for (const t2a of await query.getMany()) {
-    // found all addresses that we are tracking on behalf of our users. now,
-    // iterating all addresses in a block to see if there is a match.
-    // we could only iterate tracked addresses, but that would imply deduplication which is not good (for example,
-    // in a single block user could get several incoming payments to different owned addresses)
-    // cycle in cycle is less than optimal, but we can live with that for now
-    for (let payload of allPotentialPushPayloadsArray) {
-      if (t2a.address === payload.address) {
-        process.env.VERBOSE && console.log("enqueueing", payload);
-        payload.os = t2a.os === "android" ? "android" : "ios"; // hacky
-        payload.token = t2a.token;
-        payload.type = 2;
-        payload.badge = 1;
-        await sendQueueRepository.save({
-          data: JSON.stringify(payload),
-        });
+    for (const t2a of await query.getMany()) {
+      // found all addresses that we are tracking on behalf of our users. now,
+      // iterating all addresses in a block to see if there is a match.
+      // we could only iterate tracked addresses, but that would imply deduplication which is not good (for example,
+      // in a single block user could get several incoming payments to different owned addresses)
+      // cycle in cycle is less than optimal, but we can live with that for now
+      for (let payload of allPotentialPushPayloadsArray) {
+        if (t2a.address === payload.address) {
+          process.env.VERBOSE && console.log("enqueueing", payload);
+          payload.os = t2a.os === "android" ? "android" : "ios"; // hacky
+          payload.token = t2a.token;
+          payload.type = 2;
+          payload.badge = 1;
+          await sendQueueRepository.save({
+            data: JSON.stringify(payload),
+          });
+        }
       }
     }
   }
