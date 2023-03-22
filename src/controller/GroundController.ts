@@ -323,7 +323,7 @@ export class GroundController {
       description: pck.description,
       version: pck.version,
       uptime: Math.floor(process.uptime()),
-      last_processed_block: keyVal ? +keyVal.value : false,
+      last_processed_block: keyVal ? +keyVal.value : 0,
       send_queue_size,
       sent_24h,
     };
