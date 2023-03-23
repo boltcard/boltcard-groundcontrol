@@ -135,6 +135,7 @@ export class GroundController {
    */
   async majorTomToGroundControl(request: Request, response: Response, next: NextFunction) {
     const body: paths["/majorTomToGroundControl"]["post"]["requestBody"]["content"]["application/json"] = request.body;
+    console.log('majorTomToGroundControl', [body]);
 
     // todo: checks that we are receiving data and that there are not too much records in it (probably 1000 addresses for a start is enough)
 
