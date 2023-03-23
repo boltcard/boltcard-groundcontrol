@@ -203,11 +203,14 @@ export class GroundController {
     for (const userid of body.userids) {
       // todo: validate userids
       try {
-        await this.tokenToUseridRepository.save({
-          userid: userid,
-          token: body.token,
-          os: body.os,
-        });
+        const useridRecord = await this.tokenToUseridRepository.findOneBy({ token: body.token, userid });
+        if(!useridRecord) {
+          await this.tokenToUseridRepository.save({
+            userid: userid,
+            token: body.token,
+            os: body.os,
+          });
+        }
       } catch (e) {console.log(e.message)}
     }
     response.status(201).send("");
